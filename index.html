@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ملاحظاتي مع Firebase</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="intro" aria-labelledby="app-title">
+        <p class="eyebrow">تطبيق تدريبي بسيط</p>
+        <h1 id="app-title">ملاحظاتي مع Firebase</h1>
+        <p class="subtitle">
+          أضف ملاحظة قصيرة، وسيتم حفظها في Firestore بعد وضع إعدادات Firebase الخاصة بك.
+        </p>
+      </section>
+
+      <section class="workspace" aria-label="إدارة الملاحظات">
+        <form class="note-form" id="note-form">
+          <label for="note-title">العنوان</label>
+          <input id="note-title" name="title" type="text" maxlength="60" placeholder="مثال: أول تجربة GitHub" required>
+
+          <label for="note-body">الملاحظة</label>
+          <textarea id="note-body" name="body" rows="4" maxlength="240" placeholder="اكتب ما تريد تذكره..." required></textarea>
+
+          <button type="submit" id="save-button">حفظ الملاحظة</button>
+          <p class="status" id="status" role="status">جاهز للتجربة.</p>
+        </form>
+
+        <section class="notes-panel" aria-labelledby="notes-title">
+          <div class="panel-header">
+            <h2 id="notes-title">الملاحظات</h2>
+            <span id="notes-count">0</span>
+          </div>
+          <div class="notes-list" id="notes-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
