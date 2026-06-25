@@ -3,7 +3,7 @@
 مشروع ويب بسيط للتدرب على:
 
 - رفع مشروع إلى GitHub.
-- ربط صفحة HTML بقاعدة بيانات Firebase Firestore.
+- ربط صفحة HTML بقاعدة بيانات Firebase Realtime Database.
 - إضافة وقراءة وحذف ملاحظات.
 
 ## تشغيل المشروع محليًا
@@ -29,7 +29,7 @@ http://localhost:5500
 3. من صفحة المشروع اختر أيقونة الويب `</>`.
 4. سجّل التطبيق وانسخ كائن `firebaseConfig`.
 5. افتح ملف `firebase-config.js` واستبدل القيم التجريبية بالقيم التي نسختها.
-6. من Firebase Console افتح `Firestore Database`.
+6. من Firebase Console افتح `Realtime Database`.
 7. اضغط `Create database`.
 8. اختر `Test mode` أثناء التدريب فقط.
 9. شغّل المشروع وأضف ملاحظة، ثم راقب ظهورها في مجموعة `notes`.
@@ -51,4 +51,4 @@ git push -u origin main
 
 ## ملاحظة أمان
 
-إعدادات Firebase في تطبيقات الويب ليست سرية مثل كلمات المرور، لكنها يجب أن تكون محمية بقواعد Firestore. لا تترك `Test mode` في مشروع حقيقي.
+إعدادات Firebase في تطبيقات الويب ليست سرية مثل كلمات المرور، لكن قاعدة البيانات يجب أن تكون محمية بقواعد Realtime Database. لا تترك `Test mode` في مشروع حقيقي.
