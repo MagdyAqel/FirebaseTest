@@ -1,9 +1,11 @@
 import { firebaseConfig } from "./firebase-config.js";
 
 const form = document.querySelector("#note-form");
+const characterTitleInput = document.querySelector("#character-title");
 const titleInput = document.querySelector("#note-title");
 const bodyInput = document.querySelector("#note-body");
 const saveButton = document.querySelector("#save-button");
+const cancelButton = document.querySelector("#cancel-button");
 const notesList = document.querySelector("#notes-list");
 const notesCount = document.querySelector("#notes-count");
 const statusText = document.querySelector("#status");
@@ -17,6 +19,9 @@ let ref = null;
 let remove = null;
 let onValue = null;
 let serverTimestamp = null;
+let update = null;
+let currentNotes = [];
+let editingNoteId = null;
 
 setStatus(isConfigured ? "جاري الاتصال بقاعدة البيانات..." : "وضع تجريبي محلي.");
 
@@ -30,12 +35,13 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const note = {
+    characterTitle: characterTitleInput.value.trim(),
     title: titleInput.value.trim(),
     body: bodyInput.value.trim()
   };
 
-  if (!note.title || !note.body) {
-    setStatus("اكتب العنوان والملاحظة أولًا.");
+  if (!note.characterTitle || !note.title || !note.body) {
+    setStatus("اكتب لقب الشخصية والعنوان والملاحظة أولًا.");
     return;
   }
 
@@ -43,25 +49,39 @@ form.addEventListener("submit", async (event) => {
   setStatus("جاري الحفظ...");
 
   try {
-    if (notesReference) {
+    if (editingNoteId && notesReference) {
+      await update(ref(db, `notes/${editingNoteId}`), {
+        ...note,
+        updatedAt: serverTimestamp()
+      });
+    } else if (notesReference) {
       await push(notesReference, {
         ...note,
         createdAt: serverTimestamp()
       });
     } else {
       const notes = loadLocalNotes();
-      notes.unshift({
-        id: crypto.randomUUID(),
-        ...note,
-        createdAt: new Date().toISOString()
-      });
+      if (editingNoteId) {
+        const noteIndex = notes.findIndex((item) => item.id === editingNoteId);
+        notes[noteIndex] = {
+          ...notes[noteIndex],
+          ...note,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        notes.unshift({
+          id: crypto.randomUUID(),
+          ...note,
+          createdAt: new Date().toISOString()
+        });
+      }
       saveLocalNotes(notes);
       renderNotes(notes);
     }
 
-    form.reset();
-    titleInput.focus();
-    setStatus("تم حفظ الملاحظة مع تاريخ الإضافة.");
+    const wasEditing = Boolean(editingNoteId);
+    resetForm();
+    setStatus(wasEditing ? "تم حفظ التعديلات." : "تم حفظ الملاحظة مع تاريخ الإضافة.");
   } catch (error) {
     setStatus(`حدث خطأ أثناء الحفظ: ${error.message}`);
   } finally {
@@ -70,6 +90,12 @@ form.addEventListener("submit", async (event) => {
 });
 
 notesList.addEventListener("click", async (event) => {
+  const editButton = event.target.closest("[data-edit-id]");
+  if (editButton) {
+    startEditing(editButton.dataset.editId);
+    return;
+  }
+
   const button = event.target.closest("[data-delete-id]");
   if (!button) return;
 
@@ -86,11 +112,17 @@ notesList.addEventListener("click", async (event) => {
       renderNotes(updatedNotes);
     }
 
+    if (editingNoteId === noteId) resetForm();
     setStatus("تم حذف الملاحظة.");
   } catch (error) {
     setStatus(`حدث خطأ أثناء الحذف: ${error.message}`);
     button.disabled = false;
   }
+});
+
+cancelButton.addEventListener("click", () => {
+  resetForm();
+  setStatus("تم إلغاء التعديل.");
 });
 
 function listenToDatabase() {
@@ -118,6 +150,7 @@ async function setupFirebase() {
     remove = database.remove;
     onValue = database.onValue;
     serverTimestamp = database.serverTimestamp;
+    update = database.update;
 
     const app = firebaseApp.initializeApp(firebaseConfig);
     db = database.getDatabase(app);
@@ -130,6 +163,7 @@ async function setupFirebase() {
 }
 
 function renderNotes(notes) {
+  currentNotes = notes;
   notesCount.textContent = notes.length;
 
   if (notes.length === 0) {
@@ -139,18 +173,49 @@ function renderNotes(notes) {
 
   notesList.innerHTML = notes.map((note) => {
     const createdAt = formatDate(note.createdAt);
+    const updatedAt = note.updatedAt ? `<span>آخر تعديل: ${formatDate(note.updatedAt)}</span>` : "";
 
     return `
       <article class="note-card">
+        <p class="character-title">لقب الشخصية: ${escapeHtml(note.characterTitle || "غير محدد")}</p>
         <h3>${escapeHtml(note.title)}</h3>
         <p>${escapeHtml(note.body)}</p>
         <div class="note-meta">
-          <span>تاريخ الإضافة: ${createdAt}</span>
-          <button class="delete-button" type="button" data-delete-id="${note.id}">حذف</button>
+          <div class="note-dates">
+            <span>تاريخ الإضافة: ${createdAt}</span>
+            ${updatedAt}
+          </div>
+          <div class="note-actions">
+            <button class="edit-button" type="button" data-edit-id="${note.id}">تعديل</button>
+            <button class="delete-button" type="button" data-delete-id="${note.id}">حذف</button>
+          </div>
         </div>
       </article>
     `;
   }).join("");
+}
+
+function startEditing(noteId) {
+  const note = currentNotes.find((item) => item.id === noteId);
+  if (!note) return;
+
+  editingNoteId = noteId;
+  characterTitleInput.value = note.characterTitle ?? "";
+  titleInput.value = note.title ?? "";
+  bodyInput.value = note.body ?? "";
+  saveButton.textContent = "حفظ التعديلات";
+  cancelButton.hidden = false;
+  characterTitleInput.focus();
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  setStatus("عدّل البيانات ثم اضغط حفظ التعديلات.");
+}
+
+function resetForm() {
+  form.reset();
+  editingNoteId = null;
+  saveButton.textContent = "حفظ الملاحظة";
+  cancelButton.hidden = true;
+  characterTitleInput.focus();
 }
 
 function loadLocalNotes() {
