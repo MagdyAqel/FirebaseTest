@@ -18,13 +18,19 @@
 
       <section class="workspace" aria-label="إدارة الملاحظات">
         <form class="note-form" id="note-form">
+          <label for="character-title">لقب الشخصية</label>
+          <input id="character-title" name="characterTitle" type="text" maxlength="60" placeholder="مثال: القائد" required>
+
           <label for="note-title">العنوان</label>
           <input id="note-title" name="title" type="text" maxlength="60" placeholder="مثال: أول تجربة GitHub" required>
 
           <label for="note-body">الملاحظة</label>
           <textarea id="note-body" name="body" rows="4" maxlength="240" placeholder="اكتب ما تريد تذكره..." required></textarea>
 
-          <button type="submit" id="save-button">حفظ الملاحظة</button>
+          <div class="form-actions">
+            <button type="submit" id="save-button">حفظ الملاحظة</button>
+            <button class="cancel-button" type="button" id="cancel-button" hidden>إلغاء التعديل</button>
+          </div>
           <p class="status" id="status" role="status">جاهز للتجربة.</p>
         </form>
 
