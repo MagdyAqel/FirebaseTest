@@ -61,7 +61,7 @@ form.addEventListener("submit", async (event) => {
 
     form.reset();
     titleInput.focus();
-    setStatus("تم حفظ الملاحظة.");
+    setStatus("تم حفظ الملاحظة مع تاريخ الإضافة.");
   } catch (error) {
     setStatus(`حدث خطأ أثناء الحفظ: ${error.message}`);
   } finally {
@@ -145,7 +145,7 @@ function renderNotes(notes) {
         <h3>${escapeHtml(note.title)}</h3>
         <p>${escapeHtml(note.body)}</p>
         <div class="note-meta">
-          <span>${createdAt}</span>
+          <span>تاريخ الإضافة: ${createdAt}</span>
           <button class="delete-button" type="button" data-delete-id="${note.id}">حذف</button>
         </div>
       </article>
