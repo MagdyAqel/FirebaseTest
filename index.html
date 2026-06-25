@@ -3,47 +3,118 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ملاحظاتي مع Firebase</title>
-    <link rel="stylesheet" href="styles.css?v=20260625-1">
+    <meta name="theme-color" content="#126b62">
+    <title>شارك معنا</title>
+    <link rel="stylesheet" href="styles.css?v=20260625-2">
   </head>
   <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">مساحة المشاركة الصفية</p>
+        <h1>شارك معنا</h1>
+      </div>
+      <div class="session-actions">
+        <span id="role-label"></span>
+        <button class="secondary-button" id="logout-button" type="button" hidden>تسجيل الخروج</button>
+      </div>
+    </header>
+
     <main class="app-shell">
-      <section class="intro" aria-labelledby="app-title">
-        <p class="eyebrow">تطبيق تدريبي بسيط</p>
-        <h1 id="app-title">ملاحظاتي مع Firebase</h1>
-        <p class="subtitle">
-          أضف ملاحظة قصيرة، وسيتم حفظها في Firebase Realtime Database.
-        </p>
+      <section class="login-view" id="login-view" aria-labelledby="login-title">
+        <div class="login-panel">
+          <h2 id="login-title">الدخول إلى المشاركة</h2>
+          <div class="role-switch" aria-label="اختيار نوع المستخدم">
+            <button class="role-button active" type="button" data-role="student">طالب</button>
+            <button class="role-button" type="button" data-role="teacher">معلم</button>
+          </div>
+          <form id="login-form">
+            <label for="password">كلمة المرور</label>
+            <input id="password" type="password" autocomplete="current-password" required>
+            <button type="submit">دخول</button>
+            <p class="status" id="login-status" role="status"></p>
+          </form>
+        </div>
       </section>
 
-      <section class="workspace" aria-label="إدارة الملاحظات">
-        <form class="note-form" id="note-form">
-          <label for="character-title">لقب الشخصية</label>
-          <input id="character-title" name="characterTitle" type="text" maxlength="60" placeholder="مثال: القائد" required>
-
-          <label for="note-title">العنوان</label>
-          <input id="note-title" name="title" type="text" maxlength="60" placeholder="مثال: أول تجربة GitHub" required>
-
-          <label for="note-body">الملاحظة</label>
-          <textarea id="note-body" name="body" rows="4" maxlength="240" placeholder="اكتب ما تريد تذكره..." required></textarea>
-
-          <div class="form-actions">
-            <button type="submit" id="save-button">حفظ الملاحظة</button>
-            <button class="cancel-button" type="button" id="cancel-button" hidden>إلغاء التعديل</button>
-          </div>
-          <p class="status" id="status" role="status">جاهز للتجربة.</p>
-        </form>
-
-        <section class="notes-panel" aria-labelledby="notes-title">
-          <div class="panel-header">
-            <h2 id="notes-title">الملاحظات</h2>
-            <span id="notes-count">0</span>
-          </div>
-          <div class="notes-list" id="notes-list"></div>
+      <div id="app-view" hidden>
+        <section class="question-band" aria-labelledby="question-heading">
+          <p class="eyebrow">سؤال المعلم</p>
+          <h2 id="question-heading">بانتظار سؤال جديد</h2>
+          <p id="question-time"></p>
         </section>
-      </section>
+
+        <section class="teacher-workspace" id="teacher-view" hidden>
+          <div class="teacher-tools">
+            <section class="tool-section" aria-labelledby="roster-title">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">إدارة الصف</p>
+                  <h2 id="roster-title">قائمة الطلبة</h2>
+                </div>
+                <span class="count-badge" id="students-count">0</span>
+              </div>
+
+              <label class="file-picker" for="excel-file">
+                <span>اختيار ملف Excel</span>
+                <input id="excel-file" type="file" accept=".xlsx,.xls,.csv">
+              </label>
+              <button id="import-students-button" type="button">رفع أسماء الطلبة</button>
+              <p class="helper-text">ضع أسماء الطلبة في أول عمود من أول ورقة.</p>
+              <p class="status" id="import-status" role="status"></p>
+            </section>
+
+            <section class="tool-section" aria-labelledby="teacher-question-title">
+              <p class="eyebrow">مشاركة جديدة</p>
+              <h2 id="teacher-question-title">اكتب السؤال المطلوب</h2>
+              <textarea class="question-input" id="teacher-question" rows="5" maxlength="500" placeholder="اكتب السؤال الذي سيجيب عنه الطلبة..."></textarea>
+              <button id="start-session-button" type="button">بدء مشاركة جديدة</button>
+              <p class="helper-text">سيتم مسح إجابات الجولة السابقة مع الاحتفاظ بعدد مشاركات الطلبة.</p>
+              <p class="status" id="teacher-status" role="status"></p>
+            </section>
+          </div>
+
+          <section class="roster-section" aria-labelledby="participation-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">متابعة النشاط</p>
+                <h2 id="participation-title">عدد المشاركات</h2>
+              </div>
+            </div>
+            <div class="student-roster" id="student-roster"></div>
+          </section>
+        </section>
+
+        <section class="student-workspace" id="student-view" hidden>
+          <form class="answer-form" id="answer-form">
+            <div>
+              <label for="student-select">اختر اسمك</label>
+              <select id="student-select" required>
+                <option value="">اختر من القائمة</option>
+              </select>
+            </div>
+            <div>
+              <label for="student-answer">إجابتك أو مشاركتك</label>
+              <textarea id="student-answer" rows="5" maxlength="1000" placeholder="اكتب إجابتك هنا..." required></textarea>
+            </div>
+            <button id="submit-answer-button" type="submit">إرسال المشاركة</button>
+            <p class="status" id="student-status" role="status"></p>
+          </form>
+        </section>
+
+        <section class="responses-section" aria-labelledby="responses-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">إجابات الصف</p>
+              <h2 id="responses-title">المشاركات</h2>
+            </div>
+            <span class="count-badge" id="responses-count">0</span>
+          </div>
+          <div class="responses-list" id="responses-list"></div>
+        </section>
+      </div>
     </main>
 
-    <script type="module" src="app.js?v=20260625-1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script type="module" src="app.js?v=20260625-2"></script>
   </body>
 </html>
