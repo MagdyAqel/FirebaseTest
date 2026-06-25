@@ -9,19 +9,16 @@ const notesCount = document.querySelector("#notes-count");
 const statusText = document.querySelector("#status");
 
 const LOCAL_STORAGE_KEY = "firebase-notes-demo";
-const isConfigured = firebaseConfig.projectId && !firebaseConfig.projectId.includes("ضع-");
+const isConfigured = Boolean(firebaseConfig.databaseURL);
 let db = null;
-let notesCollection = null;
-let addDoc = null;
-let collection = null;
-let deleteDoc = null;
-let doc = null;
-let onSnapshot = null;
-let orderBy = null;
-let query = null;
+let notesReference = null;
+let push = null;
+let ref = null;
+let remove = null;
+let onValue = null;
 let serverTimestamp = null;
 
-setStatus(isConfigured ? "متصل بإعدادات Firebase." : "وضع تجريبي محلي: ضع إعدادات Firebase للحفظ في Firestore.");
+setStatus(isConfigured ? "جاري الاتصال بقاعدة البيانات..." : "وضع تجريبي محلي.");
 
 if (isConfigured) {
   setupFirebase();
@@ -46,8 +43,8 @@ form.addEventListener("submit", async (event) => {
   setStatus("جاري الحفظ...");
 
   try {
-    if (notesCollection) {
-      await addDoc(notesCollection, {
+    if (notesReference) {
+      await push(notesReference, {
         ...note,
         createdAt: serverTimestamp()
       });
@@ -81,8 +78,8 @@ notesList.addEventListener("click", async (event) => {
   setStatus("جاري الحذف...");
 
   try {
-    if (notesCollection) {
-      await deleteDoc(doc(db, "notes", noteId));
+    if (notesReference) {
+      await remove(ref(db, `notes/${noteId}`));
     } else {
       const updatedNotes = loadLocalNotes().filter((note) => note.id !== noteId);
       saveLocalNotes(updatedNotes);
@@ -96,25 +93,17 @@ notesList.addEventListener("click", async (event) => {
   }
 });
 
-function listenToFirestore() {
-  const notesQuery = query(notesCollection, orderBy("createdAt", "desc"));
-
-  onSnapshot(notesQuery, (snapshot) => {
-    const notes = snapshot.docs.map((document) => {
-      const data = document.data();
-
-      return {
-        id: document.id,
-        title: data.title,
-        body: data.body,
-        createdAt: data.createdAt?.toDate?.().toISOString() ?? new Date().toISOString()
-      };
-    });
+function listenToDatabase() {
+  onValue(notesReference, (snapshot) => {
+    const data = snapshot.val() ?? {};
+    const notes = Object.entries(data)
+      .map(([id, note]) => ({ id, ...note }))
+      .sort((first, second) => (second.createdAt ?? 0) - (first.createdAt ?? 0));
 
     renderNotes(notes);
-    setStatus("تم تحميل الملاحظات من Firestore.");
+    setStatus("متصل بقاعدة Firebase Realtime Database.");
   }, (error) => {
-    setStatus(`تعذر قراءة Firestore: ${error.message}`);
+    setStatus(`تعذر قراءة قاعدة البيانات: ${error.message}`);
     renderNotes(loadLocalNotes());
   });
 }
@@ -122,21 +111,18 @@ function listenToFirestore() {
 async function setupFirebase() {
   try {
     const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
-    const firestore = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js");
+    const database = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js");
 
-    addDoc = firestore.addDoc;
-    collection = firestore.collection;
-    deleteDoc = firestore.deleteDoc;
-    doc = firestore.doc;
-    onSnapshot = firestore.onSnapshot;
-    orderBy = firestore.orderBy;
-    query = firestore.query;
-    serverTimestamp = firestore.serverTimestamp;
+    push = database.push;
+    ref = database.ref;
+    remove = database.remove;
+    onValue = database.onValue;
+    serverTimestamp = database.serverTimestamp;
 
     const app = firebaseApp.initializeApp(firebaseConfig);
-    db = firestore.getFirestore(app);
-    notesCollection = collection(db, "notes");
-    listenToFirestore();
+    db = database.getDatabase(app);
+    notesReference = ref(db, "notes");
+    listenToDatabase();
   } catch (error) {
     setStatus(`تعذر تشغيل Firebase: ${error.message}`);
     renderNotes(loadLocalNotes());
@@ -181,6 +167,8 @@ function setStatus(message) {
 }
 
 function formatDate(value) {
+  if (!value) return "الآن";
+
   return new Intl.DateTimeFormat("ar", {
     dateStyle: "medium",
     timeStyle: "short"
